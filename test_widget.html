@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myndulon Widget Test</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.5;
+            background-color: #f9fafb;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #111827;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .alert {
+            background: #eef2ff;
+            border-left: 4px solid #4f46e5;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 Myndulon Widget Test</h1>
+
+        <div class="alert">
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Ensure the backend is running (<code>http://localhost:8000</code>).</li>
+                <li>Ensure you have created a bot in the dashboard.</li>
+                <li>If the chat bubble doesn't appear, check the browser console.</li>
+            </ol>
+        </div>
+
+        <p>The widget should appear in the bottom-right corner.</p>
+
+        <p>Current configuration:</p>
+        <ul>
+            <li>API URL: <code>http://localhost:8000</code></li>
+            <li>Bot ID: <code>(Update below in code if needed)</code></li>
+        </ul>
+    </div>
+
+    <!-- 
+        Change the src to your production domain in production
+        e.g., https://your-domain.com/widget/widget.js
+    -->
+    <script src="http://localhost:8000/widget/widget.js"></script>
+    <script>
+        MyndulonWidget.init({
+            // REPLACE THESE WITH YOUR BOT CREDENTIALS
+            botId: 'YOUR_BOT_ID_HERE',
+            apiKey: 'YOUR_API_KEY_HERE',
+
+            // Optional: Override API URL for local testing
+            apiUrl: 'http://localhost:8000'
+        });
+    </script>
+</body>
+
+</html>
