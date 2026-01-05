@@ -546,7 +546,7 @@ async def ingest_content(
 
         # Generate embeddings and store
         logger.info("Generating embeddings and storing in Qdrant...")
-        vector_count = await embed_and_store(bot_id, chunks)
+        vector_count = await embed_and_store(bot_id, chunks, bot=bot)
 
         # Update bot timestamp
         bot.updated_at = bot.updated_at  # Trigger SQLAlchemy update

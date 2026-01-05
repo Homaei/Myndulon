@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { BotsPage } from '@/pages/BotsPage'
 import { BotFormPage } from '@/pages/BotFormPage'
 import { BotTestPage } from '@/pages/BotTestPage'
+import { WidgetsPage } from '@/pages/WidgetsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -37,6 +38,7 @@ export function App() {
             <Route path="bots/:id" element={<BotFormPage />} />
             <Route path="bots/:id" element={<BotFormPage />} />
             <Route path="bots/:id/test" element={<BotTestPage />} />
+            <Route path="widgets" element={<WidgetsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

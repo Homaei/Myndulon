@@ -18,6 +18,11 @@ interface Bot {
   api_key: string
   message_count: number
   message_limit: number
+  provider: 'openai' | 'ollama' | 'huggingface' | 'custom'
+  model_id: string
+  temperature: number
+  ai_base_url?: string
+  ai_api_key?: string
   created_at: string
   updated_at: string
 }
@@ -30,11 +35,27 @@ interface BotCreate {
   show_button_text?: boolean
   button_text?: string
   source_type?: 'url' | 'text'
-  source_content?: string
   message_limit?: number
+  provider?: 'openai' | 'ollama' | 'huggingface' | 'custom'
+  model_id?: string
+  temperature?: number
+  ai_base_url?: string
+  ai_api_key?: string
 }
 
 interface BotUpdate extends Partial<BotCreate> { }
+
+interface ModelInfo {
+  name: string
+  size: number
+  digest?: string
+  details?: any
+}
+
+interface PullModelResponse {
+  status: string
+  message: string
+}
 
 interface IngestRequest {
   source_type: 'url' | 'text'
@@ -179,5 +200,28 @@ export const botApi = {
   },
 }
 
-export type { Bot, BotCreate, BotUpdate, IngestRequest }
+export const modelApi = {
+  async list(): Promise<ModelInfo[]> {
+    const response = await fetchWithAuth('/api/admin/models')
+    return response.json()
+  },
+
+  async pull(name: string): Promise<PullModelResponse> {
+    const response = await fetchWithAuth('/api/admin/models/pull', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    })
+    return response.json()
+  },
+
+  async verify_hf(name: string): Promise<PullModelResponse> {
+    const response = await fetchWithAuth('/api/admin/models/verify/huggingface', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    })
+    return response.json()
+  }
+}
+
+export type { Bot, BotCreate, BotUpdate, IngestRequest, ModelInfo, PullModelResponse }
 export { ApiError }

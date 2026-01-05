@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Index, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -55,6 +55,16 @@ class Bot(Base):
         String(10), nullable=True
     )  # 'url' or 'text'
     source_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # AI Model Configuration
+    provider: Mapped[str] = mapped_column(String(50), default="local")  # openai, ollama, huggingface, custom
+    model_id: Mapped[str] = mapped_column(String(100), default="llama3:latest")
+    temperature: Mapped[float] = mapped_column(Float, default=0.7)
+    
+    # Advanced AI Settings (Per-bot overrides)
+    ai_base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ai_api_key: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Store encrypted in real app
+
 
     # API & Security
     api_key: Mapped[str] = mapped_column(

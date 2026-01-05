@@ -40,6 +40,17 @@ class BotBase(BaseModel):
     message_limit: int = Field(
         1000, ge=1, le=1000000, description="Monthly message limit"
     )
+    provider: str = Field(
+        "local", pattern=r"^(openai|ollama|huggingface|custom)$", description="AI Provider"
+    )
+    model_id: str = Field(
+        "gpt-4o", min_length=1, max_length=100, description="Model ID/Name"
+    )
+    temperature: float = Field(
+        0.7, ge=0.0, le=2.0, description="Temperature (randomness)"
+    )
+    ai_base_url: Optional[str] = Field(None, description="Custom Base URL for AI provider")
+    ai_api_key: Optional[str] = Field(None, description="Custom API Key for AI provider")
 
 
 class BotCreate(BotBase):
@@ -62,6 +73,11 @@ class BotUpdate(BaseModel):
     source_type: Optional[str] = Field(None, pattern=r"^(url|text)$")
     source_content: Optional[str] = None
     message_limit: Optional[int] = Field(None, ge=1, le=1000000)
+    provider: Optional[str] = Field(None, pattern=r"^(openai|ollama|huggingface|custom)$")
+    model_id: Optional[str] = Field(None, min_length=1, max_length=100)
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    ai_base_url: Optional[str] = None
+    ai_api_key: Optional[str] = None
 
 
 class BotResponse(BotBase):

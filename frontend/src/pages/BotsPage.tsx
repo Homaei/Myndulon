@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { botApi, type Bot } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,7 @@ const getAbsoluteAvatarUrl = (url: string | null | undefined): string | null => 
 export function BotsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [botToDelete, setBotToDelete] = useState<Bot | null>(null)
@@ -93,23 +95,23 @@ export function BotsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Your Chatbots</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('your_bots')}</h2>
           <p className="text-muted-foreground mt-1">
-            Create, manage, and monitor your AI assistants.
+            {t('bots_desc')}
           </p>
         </div>
         <Button onClick={() => navigate('/dashboard/bots/new')} size="lg" className="shadow-sm">
           <Plus className="mr-2 h-4 w-4" />
-          Create Bot
+          {t('create_bot')}
         </Button>
       </div>
 
-      {/* Search and Filters (Future placeholder) */}
+      {/* Search and Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search bots..."
+            placeholder={t('search_bots')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-background"
@@ -123,14 +125,14 @@ export function BotsPage() {
           <div className="bg-muted p-4 rounded-full mb-4">
             <BotIcon className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">No chatbots found</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('no_bots')}</h3>
           <p className="text-muted-foreground text-center max-w-md mb-6">
             {searchQuery
-              ? "No bots match your search terms."
-              : "Get started by creating your first AI chatbot. It only takes a minute."}
+              ? t('no_bots')
+              : t('no_bots_desc')}
           </p>
           <Button onClick={() => navigate('/dashboard/bots/new')} variant={searchQuery ? "outline" : "default"}>
-            {searchQuery ? "Clear Search" : "Create New Bot"}
+            {searchQuery ? t('search_bots') : t('create_bot')}
           </Button>
         </div>
       ) : (
@@ -150,15 +152,15 @@ export function BotsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('delete_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the chatbot "<strong>{botToDelete?.name}</strong>" and remove all its data. This action cannot be undone.
+              {t('delete_confirm_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Delete Bot
+              {t('delete_bot')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -168,6 +170,7 @@ export function BotsPage() {
 }
 
 function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => void; onTest: () => void; onDelete: () => void }) {
+  const { t } = useTranslation()
   const usagePercent = (bot.message_count / bot.message_limit) * 100
   const avatarUrl = getAbsoluteAvatarUrl(bot.avatar_url)
 
@@ -198,7 +201,7 @@ function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => vo
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              Active
+              {t('active')}
             </p>
           </div>
         </div>
@@ -209,16 +212,16 @@ function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => vo
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
             <DropdownMenuItem onClick={onEdit}>
-              <Settings className="mr-2 h-4 w-4" /> Edit Configuration
+              <Settings className="mr-2 h-4 w-4" /> {t('edit_config')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onTest}>
-              <Play className="mr-2 h-4 w-4" /> Test Chatbot
+              <Play className="mr-2 h-4 w-4" /> {t('test_chatbot')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600">
-              <Trash className="mr-2 h-4 w-4" /> Delete
+              <Trash className="mr-2 h-4 w-4" /> {t('delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -230,7 +233,7 @@ function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => vo
 
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Monthly Usage</span>
+            <span className="text-muted-foreground">{t('monthly_usage')}</span>
             <span className="font-medium">{bot.message_count} / {bot.message_limit}</span>
           </div>
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
@@ -246,10 +249,10 @@ function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => vo
         <div className="flex gap-2 w-full">
           <Button variant="outline" size="sm" className="flex-1" onClick={onTest}>
             <MessageSquare className="mr-2 h-3.5 w-3.5" />
-            Chat
+            {t('chat')}
           </Button>
           <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
-            Configure
+            {t('configure')}
           </Button>
         </div>
       </CardFooter>

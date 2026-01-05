@@ -227,6 +227,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 from app.routes import admin, settings
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(settings.router, prefix="/api/admin", tags=["Settings"])
+from app.routes import models
+app.include_router(models.router, prefix="/api/admin/models", tags=["Models"])
 
 # Phase 2.2: Mount public routes
 from app.routes import public

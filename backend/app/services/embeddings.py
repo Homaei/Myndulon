@@ -103,25 +103,46 @@ async def generate_embeddings_local(texts: List[str]) -> List[List[float]]:
     return all_embeddings
 
 
-async def generate_embeddings(texts: List[str]) -> List[List[float]]:
+from app.models import Bot
+
+async def generate_embeddings(texts: List[str], bot: Bot = None) -> List[List[float]]:
     """
     Generate embeddings for texts using configured provider.
+    Priority:
+    1. If bot is provided and bot.provider is local/ollama/custom/huggingface -> Use Local (FastEmbed)
+    2. If global config is local -> Use Local
+    3. Else -> Use OpenAI
     """
     if not texts:
         logger.warning("Empty text list provided for embedding")
         return []
 
     config = await get_ai_config()
+    
+    # Determine if we should use local embeddings
+    use_local = False
+    
+    if bot:
+        # If bot is configured for ANY non-OpenAI provider, use local embeddings
+        # This prevents OpenAI quota errors for users expecting a fully local/free stack
+        if bot.provider in ["local", "ollama", "custom", "huggingface"]:
+            use_local = True
+    
+    if config.get("ai_provider") == "local":
+        use_local = True
 
-    if config["ai_provider"] == "local":
+    if use_local:
         return await generate_embeddings_local(texts)
     else:
-        return await generate_embeddings_openai(texts, config["openai_api_key"])
+        # Fallback to OpenAI
+        api_key = config.get("openai_api_key")
+        return await generate_embeddings_openai(texts, api_key)
 
 
 async def embed_and_store(
     bot_id: str,
     chunks: List[dict],
+    bot: Bot = None
 ) -> int:
     """
     Generate embeddings for chunks and store in Qdrant.
@@ -135,8 +156,8 @@ async def embed_and_store(
     # Extract texts for embedding
     texts = [chunk["text"] for chunk in chunks]
 
-    # Generate embeddings
-    embeddings = await generate_embeddings(texts)
+    # Generate embeddings (pass bot to decide provider)
+    embeddings = await generate_embeddings(texts, bot)
 
     if len(embeddings) != len(chunks):
         raise ValueError(
@@ -165,25 +186,16 @@ async def embed_and_store(
     return len(vectors)
 
 
-async def generate_query_embedding(query: str) -> List[float]:
+async def generate_query_embedding(query: str, bot: Bot = None) -> List[float]:
     """
     Generate embedding for a query string.
     """
     logger.info(f"Generating query embedding: {query[:100]}...")
 
-    config = await get_ai_config()
-
-    if config["ai_provider"] == "local":
-        embeddings = await generate_embeddings_local([query])
-        return embeddings[0]
-    else:
-        client = get_openai_client(config["openai_api_key"])
-        try:
-            response = await client.embeddings.create(
-                model=settings.embedding_model,
-                input=[query],
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            logger.error(f"Failed to generate query embedding: {e}")
-            raise
+    # Reuse generate_embeddings logic for consistency
+    embeddings = await generate_embeddings([query], bot)
+    
+    if not embeddings:
+        raise ValueError("Failed to generate query embedding")
+        
+    return embeddings[0]

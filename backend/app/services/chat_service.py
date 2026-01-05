@@ -32,14 +32,26 @@ SIMILARITY_THRESHOLD = 0.6  # Minimum similarity score
 MAX_CONVERSATION_HISTORY = 10  # Last N messages to include
 
 
-def get_openai_client(api_key: Optional[str] = None) -> AsyncOpenAI:
+def get_openai_client(api_key: Optional[str] = None, base_url: Optional[str] = None) -> AsyncOpenAI:
     """Get or create OpenAI client singleton."""
     global _openai_client
 
-    if _openai_client is None or (_openai_client.api_key != api_key and api_key is not None):
-        key_to_use = api_key or settings.openai_api_key
-        _openai_client = AsyncOpenAI(api_key=key_to_use)
-        logger.info("OpenAI client initialized for chat")
+    # Check if client needs to be recreated (key changed or base_url changed)
+    should_recreate = False
+    if _openai_client is None:
+        should_recreate = True
+    else:
+        if api_key is not None and _openai_client.api_key != api_key:
+            should_recreate = True
+        if base_url is not None and str(_openai_client.base_url) != str(base_url):
+             # basic check, base_url in client might have trailing slash
+             if str(_openai_client.base_url).rstrip('/') != base_url.rstrip('/'):
+                should_recreate = True
+
+    if should_recreate:
+        key_to_use = api_key or settings.openai_api_key or "sk-dummy" # Custom providers often need a dummy key
+        _openai_client = AsyncOpenAI(api_key=key_to_use, base_url=base_url)
+        logger.info(f"OpenAI client initialized for chat (Base: {base_url or 'Default'})")
 
     return _openai_client
 
@@ -91,16 +103,16 @@ def build_messages(
     return messages
 
 
-async def retrieve_context(bot_id: str, question: str) -> List[dict]:
+async def retrieve_context(bot: Bot, question: str) -> List[dict]:
     """Retrieve relevant context chunks for a question."""
     logger.info(f"Retrieving context for question: {question[:100]}...")
 
-    # Generate embedding for question
-    query_embedding = await generate_query_embedding(question)
+    # Generate embedding for question (pass bot to decide provider)
+    query_embedding = await generate_query_embedding(question, bot=bot)
 
     # Search Qdrant for similar chunks
     results = await search_vectors(
-        bot_id=bot_id,
+        bot_id=bot.id,
         query_embedding=query_embedding,
         limit=MAX_CONTEXT_CHUNKS,
         similarity_threshold=SIMILARITY_THRESHOLD,
@@ -113,21 +125,24 @@ async def retrieve_context(bot_id: str, question: str) -> List[dict]:
             f"(scores: {scores_str})"
         )
     else:
-        logger.warning(f"No relevant context found for bot {bot_id}")
+        logger.warning(f"No relevant context found for bot {bot.id}")
 
     return results
 
 
 async def generate_response_openai(
     messages: List[dict],
-    api_key: str
+    api_key: str,
+    base_url: Optional[str] = None,
+    model: Optional[str] = None
 ) -> AsyncGenerator[str, None]:
-    """Stream response from OpenAI."""
-    client = get_openai_client(api_key)
+    """Stream response from OpenAI or Compatible API."""
+    client = get_openai_client(api_key, base_url)
+    model_to_use = model or settings.chat_model
 
     try:
         stream = await client.chat.completions.create(
-            model=settings.chat_model,
+            model=model_to_use,
             messages=messages,
             stream=True,
             temperature=0.7,
@@ -139,23 +154,27 @@ async def generate_response_openai(
                 yield chunk.choices[0].delta.content
 
     except Exception as e:
-        logger.error(f"OpenAI streaming failed: {e}")
+        logger.error(f"AI Streaming failed (Base: {base_url}): {e}")
         yield f"I apologize, but I encountered an error: {str(e)}"
 
 
 async def generate_response_ollama(
     messages: List[dict],
-    base_url: str
+    base_url: str,
+    model: str = "llama3",
+    temperature: float = 0.7
 ) -> AsyncGenerator[str, None]:
-    """Stream response from Ollama."""
+    """Stream response from Ollama (Native API)."""
+    # Note: If Custom provider is used with Ollama, it will go through generate_response_openai with /v1
+    # This function uses Ollama's native API.
     url = f"{base_url.rstrip('/')}/api/chat"
     
     payload = {
-        "model": settings.local_chat_model,
+        "model": model,
         "messages": messages,
         "stream": True,
         "options": {
-            "temperature": 0.7,
+            "temperature": temperature,
             "num_predict": 500,
         }
     }
@@ -199,7 +218,7 @@ async def generate_response(
     logger.info(f"Generating response for bot {bot.id} ({bot.name})")
 
     # Retrieve relevant context
-    context_chunks = await retrieve_context(bot.id, question)
+    context_chunks = await retrieve_context(bot, question)
 
     # Build system prompt with context
     system_prompt = build_system_prompt(bot, context_chunks)
@@ -207,17 +226,57 @@ async def generate_response(
     # Build messages array
     messages = build_messages(system_prompt, conversation_history, question)
 
-    config = await get_ai_config()
+    # Determine Provider and Config
+    # Priority: Bot-specific config > Global config
+    
+    # Defaults from Global Config
+    global_config = await get_ai_config()
+    
+    # Bot overrides
+    provider = bot.provider or global_config.get("ai_provider", "openai")
+    model_id = bot.model_id or global_config.get("model_name") or "gpt-4o"
+    temperature = bot.temperature if bot.temperature is not None else 0.7
+    
+    # Determine execution path
+    logger.info(f"Using Provider: {provider}, Model: {model_id}, Temp: {temperature}")
 
-    logger.info(
-        f"Calling AI Provider ({config['ai_provider']}) with {len(messages)} messages"
-    )
+    if provider == "local" or provider == "ollama":
+        # Local Ollama
+        base_url = bot.ai_base_url or global_config.get("ollama_base_url") or "http://host.docker.internal:11434"
+        
+        # Docker Compatibility: Replace localhost with host.docker.internal
+        # This fixes issues where user/db has 'localhost' stored but app runs in container
+        if "localhost" in base_url or "127.0.0.1" in base_url:
+            base_url = base_url.replace("localhost", "host.docker.internal").replace("127.0.0.1", "host.docker.internal")
+            logger.info(f"Substituted Docker host in URL: {base_url}")
 
-    if config["ai_provider"] == "local":
-        async for token in generate_response_ollama(messages, config["ollama_base_url"]):
+        async for token in generate_response_ollama(messages, base_url, model_id, temperature):
             yield token
+
+    elif provider == "custom":
+        # Custom OpenAI-compatible endpoint (LM Studio, vLLM, etc)
+        base_url = bot.ai_base_url or global_config.get("base_url") or "http://localhost:1234/v1"
+        api_key = bot.ai_api_key or "sk-dummy"
+        async for token in generate_response_openai(messages, api_key, base_url, model_id, temperature):
+            yield token
+
+    elif provider == "huggingface":
+        # HuggingFace Inference API
+        api_key = bot.ai_api_key or global_config.get("huggingface_api_key") or ""
+        # HF v1 compatible base url construction
+        base_url = f"https://api-inference.huggingface.co/models/{model_id}/v1"
+        
+        async for token in generate_response_openai(messages, api_key, base_url, model_id, temperature):
+            yield token
+
     else:
-        async for token in generate_response_openai(messages, config["openai_api_key"]):
+        # OpenAI Standard
+        api_key = global_config.get("openai_api_key", "")
+        if bot.provider == "openai" and bot.ai_api_key:
+             # Allow overriding OpenAI key per bot if needed (though rare)
+             api_key = bot.ai_api_key
+             
+        async for token in generate_response_openai(messages, api_key, None, model_id, temperature):
             yield token
 
     logger.info(f"Response generation complete for bot {bot.id}")

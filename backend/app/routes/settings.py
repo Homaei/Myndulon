@@ -25,12 +25,18 @@ class ConfigResponse(BaseModel):
     ai_provider: str
     openai_api_key: str | None
     ollama_base_url: str
+    base_url: str
+    model_name: str
+    huggingface_api_key: str | None
 
 
 class ConfigUpdate(BaseModel):
-    ai_provider: Literal["openai", "local"]
+    ai_provider: Literal["openai", "local", "custom", "huggingface"]
     openai_api_key: str | None = None
-    ollama_base_url: str
+    ollama_base_url: str | None = None
+    base_url: str | None = None
+    model_name: str | None = None
+    huggingface_api_key: str | None = None
 
 
 @router.get("/config", response_model=ConfigResponse)
@@ -59,6 +65,15 @@ async def update_config(
         
     if data.ollama_base_url:
         await set_system_setting("OLLAMA_BASE_URL", data.ollama_base_url)
+
+    if data.base_url is not None:
+        await set_system_setting("CUSTOM_BASE_URL", data.base_url)
+
+    if data.model_name is not None:
+        await set_system_setting("CUSTOM_MODEL_NAME", data.model_name)
+    
+    if data.huggingface_api_key is not None:
+        await set_system_setting("HUGGINGFACE_API_KEY", data.huggingface_api_key)
         
     logger.info(f"Admin {admin.username} updated system configuration")
     

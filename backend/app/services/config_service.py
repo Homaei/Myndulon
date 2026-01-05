@@ -78,9 +78,15 @@ async def get_ai_config() -> dict:
     provider = await get_system_setting("AI_PROVIDER", settings.ai_provider)
     openai_key = await get_system_setting("OPENAI_API_KEY", settings.openai_api_key)
     ollama_url = await get_system_setting("OLLAMA_BASE_URL", settings.ollama_base_url)
+    base_url = await get_system_setting("CUSTOM_BASE_URL", "")
+    model_name = await get_system_setting("CUSTOM_MODEL_NAME", "")
+    hf_key = await get_system_setting("HUGGINGFACE_API_KEY", "")
     
     return {
         "ai_provider": provider,
         "openai_api_key": openai_key,
         "ollama_base_url": ollama_url,
+        "base_url": base_url,
+        "model_name": model_name,
+        "huggingface_api_key": hf_key,
     }

@@ -52,19 +52,14 @@ def get_qdrant_client() -> QdrantClient:
     return _qdrant_client
 
 
-async def get_collection_config() -> tuple[str, int]:
+async def get_collection_config(vector_size: int = 1536) -> str:
     """
-    Get dynamic collection configuration based on AI provider.
-    
-    Returns:
-        (collection_name, vector_size)
+    Get dynamic collection name based on vector size.
     """
-    ai_provider = await get_system_setting("AI_PROVIDER", settings.ai_provider)
-    
-    if ai_provider == "local":
-        return "myndulon_embeddings_local", 384  # FastEmbed BGE-small
+    if vector_size == 384:
+        return "myndulon_embeddings_local"
     else:
-        return "myndulon_embeddings", 1536  # OpenAI text-embedding-3-small
+        return "myndulon_embeddings"
 
 
 async def init_collection() -> None:
@@ -107,6 +102,9 @@ async def init_collection() -> None:
 
     except Exception as e:
         logger.error(f"Failed to initialize collections: {e}")
+        # We raise here because if DB is down, app calls might fail anyway, 
+        # but main.py might handle it. Use raise to be safe or log and pass.
+        # Original code raised.
         raise
 
 
@@ -127,14 +125,19 @@ async def health_check() -> dict:
         logger.error(f"Qdrant health check failed: {e}")
         return {"healthy": False, "error": str(e)}
 
-
 async def upsert_vectors(
     bot_id: str,
     vectors: list[tuple[str, list[float], dict]],
 ) -> None:
-    """Upsert vectors into the currently active collection."""
+    """Upsert vectors into the correct collection based on dimension."""
+    if not vectors:
+        return
+
     client = get_qdrant_client()
-    collection_name, _ = await get_collection_config()
+    
+    # Determine collection based on first vector's dimension
+    vector_size = len(vectors[0][1])
+    collection_name = await get_collection_config(vector_size)
 
     try:
         points = []
@@ -153,7 +156,7 @@ async def upsert_vectors(
             points=points,
         )
 
-        logger.info(f"Upserted {len(points)} vectors to '{collection_name}' for bot {bot_id}")
+        logger.info(f"Upserted {len(points)} vectors to '{collection_name}' (size={vector_size}) for bot {bot_id}")
 
     except Exception as e:
         logger.error(f"Failed to upsert vectors: {e}")
@@ -166,9 +169,12 @@ async def search_vectors(
     limit: int = 5,
     similarity_threshold: float = 0.7,
 ) -> list[dict]:
-    """Search for similar vectors in the active collection."""
+    """Search for similar vectors in the correct collection."""
     client = get_qdrant_client()
-    collection_name, _ = await get_collection_config()
+    
+    # Determine collection based on query dimension
+    vector_size = len(query_embedding)
+    collection_name = await get_collection_config(vector_size)
 
     try:
         results = client.query_points(
