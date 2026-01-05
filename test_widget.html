@@ -50,7 +50,7 @@
         <div class="alert">
             <p><strong>Instructions:</strong></p>
             <ol>
-                <li>Ensure the backend is running (<code>http://localhost:8000</code>).</li>
+                <li>Ensure the backend is running (<code>http://localhost:8080</code>).</li>
                 <li>Ensure you have created a bot in the dashboard.</li>
                 <li>If the chat bubble doesn't appear, check the browser console.</li>
             </ol>
@@ -60,7 +60,7 @@
 
         <p>Current configuration:</p>
         <ul>
-            <li>API URL: <code>http://localhost:8000</code></li>
+            <li>API URL: <code>http://localhost:8080</code></li>
             <li>Bot ID: <code>(Update below in code if needed)</code></li>
         </ul>
     </div>
@@ -69,7 +69,7 @@
         Change the src to your production domain in production
         e.g., https://your-domain.com/widget/widget.js
     -->
-    <script src="http://localhost:8000/widget/widget.js"></script>
+    <script src="http://localhost:8080/widget/widget.js"></script>
     <script>
         MyndulonWidget.init({
             // REPLACE THESE WITH YOUR BOT CREDENTIALS
@@ -77,7 +77,7 @@
             apiKey: 'YOUR_API_KEY_HERE',
 
             // Optional: Override API URL for local testing
-            apiUrl: 'http://localhost:8000'
+            apiUrl: 'http://localhost:8080'
         });
     </script>
 </body>

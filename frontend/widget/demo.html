@@ -105,7 +105,7 @@
 				<ol>
 					<li><strong>Start the backend server:</strong></li>
 					<div class="code-block">
-						<code>cd backend && uvicorn main:app --reload --port 8000</code>
+						<code>cd backend && uvicorn main:app --reload --port 8080</code>
 					</div>
 
 					<li>
@@ -141,7 +141,7 @@
 						&nbsp;&nbsp;&nbsp;&nbsp;apiKey: '<span style="color: #fbbf24">YOUR_API_KEY</span
 						>',<br />
 						&nbsp;&nbsp;&nbsp;&nbsp;apiUrl: '<span style="color: #fbbf24"
-							>http://localhost:8000</span
+							>http://localhost:8080</span
 						>'<br />
 						&nbsp;&nbsp;})<br />
 						&lt;/script&gt;
@@ -171,7 +171,7 @@
 			MyndulonWidget.init({
 				botId: '86b5c9b4-3a45-400c-b101-83ac03b2e9de',
 				apiKey: '2407c4d1-8244-428f-8197-b50ae170330b',
-				apiUrl: 'http://localhost:8000',
+				apiUrl: 'http://localhost:8080',
 			});
 		} else {
 			console.warn('⚠️ Please update BOT_ID and API_KEY in demo.html to test the widget');

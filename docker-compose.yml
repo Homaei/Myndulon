@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: myndulon-app
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       # Database
       - DATABASE_URL=sqlite+aiosqlite:///./data/chatbots.db
@@ -37,14 +37,13 @@ services:
     volumes:
       # Persist data directory
       - ./data:/app/data
-
       # Optional: Mount local backend code for development
       # - ./backend:/app/backend
 
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,7 +51,6 @@ services:
 
     networks:
       - myndulon-network
-
   # Optional: Qdrant server (for production deployments)
   # Uncomment this service and update app environment to use QDRANT_URL
   # qdrant:

@@ -2,7 +2,7 @@
  * API client for Chirp dashboard.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 interface Bot {
   id: string
@@ -34,7 +34,7 @@ interface BotCreate {
   message_limit?: number
 }
 
-interface BotUpdate extends Partial<BotCreate> {}
+interface BotUpdate extends Partial<BotCreate> { }
 
 interface IngestRequest {
   source_type: 'url' | 'text'

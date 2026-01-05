@@ -1,98 +1,122 @@
-/**
- * Login page for admin authentication.
- */
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Lock, User, Loader2, Sparkles } from 'lucide-react'
 
 export function LoginPage() {
-  const navigate = useNavigate()
-  const { login, isAuthenticated } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate('/dashboard')
-  }
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
+    setError(null)
     setIsLoading(true)
 
     try {
       await login(username, password)
       navigate('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'Invalid username or password')
-    } finally {
+    } catch (err) {
+      setError('Invalid username or password')
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">🧠 Myndulon</h1>
-          <p className="mt-2 text-gray-600">Sign in to your admin dashboard</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-50/50">
+      {/* Background Decoration */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[100px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[100px]" />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              required
-              autoFocus
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="mt-1"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+      <div className="w-full max-w-md p-4 z-10">
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary p-2.5 rounded-xl shadow-lg shadow-primary/25">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
-          )}
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Default credentials: admin / admin</p>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Myndulon
+            </h1>
+          </div>
         </div>
-      </Card>
+
+        <Card className="border-0 shadow-xl shadow-gray-200/50 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="space-y-1 text-center pb-8">
+            <CardTitle className="text-xl">Welcome back</CardTitle>
+            <CardDescription>
+              Enter your credentials to access the admin portal
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-md flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="admin"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-9 bg-gray-50/50 border-gray-200 focus:bg-white transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 bg-gray-50/50 border-gray-200 focus:bg-white transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="pt-4">
+              <Button
+                type="submit"
+                className="w-full h-11 text-base shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+
+        <p className="text-center text-sm text-gray-400 mt-8">
+          Powered by Myndulon AI &copy; 2026
+        </p>
+      </div>
     </div>
   )
 }

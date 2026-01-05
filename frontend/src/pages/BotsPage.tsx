@@ -1,14 +1,18 @@
-/**
- * Bots list page - displays all bots with quick actions.
- */
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { botApi, type Bot } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,18 +23,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Plus,
+  MoreVertical,
+  MessageSquare,
+  Settings,
+  Trash,
+  Bot as BotIcon,
+  Search,
+  Play
+} from 'lucide-react'
 
 // Helper to convert relative avatar URL to absolute
 const getAbsoluteAvatarUrl = (url: string | null | undefined): string | null => {
   if (!url) return null
   if (url.startsWith('http')) return url
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
   return `${API_URL}${url}`
 }
 
 export function BotsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchQuery, setSearchQuery] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [botToDelete, setBotToDelete] = useState<Bot | null>(null)
 
@@ -59,62 +74,68 @@ export function BotsPage() {
     }
   }
 
+  const filteredBots = bots?.filter(bot =>
+    bot.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading bots...</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-48 bg-muted rounded-xl"></div>
+        ))}
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Bots</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage your AI chatbots and embed them on your website
+          <h2 className="text-3xl font-bold tracking-tight">Your Chatbots</h2>
+          <p className="text-muted-foreground mt-1">
+            Create, manage, and monitor your AI assistants.
           </p>
         </div>
-
-        <Button onClick={() => navigate('/dashboard/bots/new')}>
-          Create New Bot
+        <Button onClick={() => navigate('/dashboard/bots/new')} size="lg" className="shadow-sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Bot
         </Button>
       </div>
 
-      {!bots || bots.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg
-              className="w-12 h-12 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
+      {/* Search and Filters (Future placeholder) */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search bots..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-background"
+          />
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {!filteredBots || filteredBots.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-muted/20 border-2 border-dashed border-muted rounded-xl">
+          <div className="bg-muted p-4 rounded-full mb-4">
+            <BotIcon className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No bots yet
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Get started by creating your first chatbot
+          <h3 className="text-xl font-semibold mb-2">No chatbots found</h3>
+          <p className="text-muted-foreground text-center max-w-md mb-6">
+            {searchQuery
+              ? "No bots match your search terms."
+              : "Get started by creating your first AI chatbot. It only takes a minute."}
           </p>
-          <Button onClick={() => navigate('/dashboard/bots/new')}>
-            Create Your First Bot
+          <Button onClick={() => navigate('/dashboard/bots/new')} variant={searchQuery ? "outline" : "default"}>
+            {searchQuery ? "Clear Search" : "Create New Bot"}
           </Button>
-        </Card>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bots.map((bot) => (
+          {filteredBots.map((bot) => (
             <BotCard
               key={bot.id}
               bot={bot}
@@ -126,20 +147,18 @@ export function BotsPage() {
         </div>
       )}
 
-      {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Bot</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{botToDelete?.name}"? This action
-              cannot be undone and will remove all associated data.
+              This will permanently delete the chatbot "<strong>{botToDelete?.name}</strong>" and remove all its data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} variant="destructive">
-              Delete
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete Bot
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -148,85 +167,92 @@ export function BotsPage() {
   )
 }
 
-interface BotCardProps {
-  bot: Bot
-  onEdit: () => void
-  onTest: () => void
-  onDelete: () => void
-}
-
-function BotCard({ bot, onEdit, onTest, onDelete }: BotCardProps) {
+function BotCard({ bot, onEdit, onTest, onDelete }: { bot: Bot; onEdit: () => void; onTest: () => void; onDelete: () => void }) {
   const usagePercent = (bot.message_count / bot.message_limit) * 100
   const avatarUrl = getAbsoluteAvatarUrl(bot.avatar_url)
 
   return (
-    <Card className="p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
+    <Card className="group hover:shadow-md transition-all duration-200 border-border/60">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-3">
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt={bot.name}
-              className="w-12 h-12 rounded-full object-cover"
-              onError={() => {
-                console.error('Failed to load bot avatar in card:', avatarUrl)
-              }}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-background border"
             />
           ) : (
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
               style={{ backgroundColor: bot.accent_color }}
             >
               {bot.name.charAt(0).toUpperCase()}
             </div>
           )}
           <div>
-            <h3 className="font-semibold text-gray-900">{bot.name}</h3>
-            <Badge variant="secondary" className="mt-1">
-              {bot.source_type || 'Not trained'}
-            </Badge>
+            <CardTitle className="text-base font-semibold leading-none">
+              {bot.name}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              Active
+            </p>
           </div>
         </div>
-      </div>
-
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-        {bot.welcome_message || 'No welcome message set'}
-      </p>
-
-      {/* Usage meter */}
-      <div className="mb-4">
-        <div className="flex justify-between text-xs text-gray-600 mb-1">
-          <span>Usage</span>
-          <span>
-            {bot.message_count.toLocaleString()} / {bot.message_limit.toLocaleString()}
-          </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onEdit}>
+              <Settings className="mr-2 h-4 w-4" /> Edit Configuration
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onTest}>
+              <Play className="mr-2 h-4 w-4" /> Test Chatbot
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600">
+              <Trash className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent>
+        <div className="text-sm text-muted-foreground h-10 line-clamp-2">
+          {bot.welcome_message || <span className="italic opacity-50">No welcome message configured.</span>}
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full transition-all ${
-              usagePercent >= 90
-                ? 'bg-red-500'
-                : usagePercent >= 70
-                ? 'bg-yellow-500'
-                : 'bg-green-500'
-            }`}
-            style={{ width: `${Math.min(usagePercent, 100)}%` }}
-          />
-        </div>
-      </div>
 
-      {/* Actions */}
-      <div className="grid grid-cols-3 gap-2">
-        <Button onClick={onEdit} variant="outline" size="sm">
-          Edit
-        </Button>
-        <Button onClick={onTest} variant="outline" size="sm">
-          Test
-        </Button>
-        <Button onClick={onDelete} variant="outline" size="sm">
-          Delete
-        </Button>
-      </div>
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Monthly Usage</span>
+            <span className="font-medium">{bot.message_count} / {bot.message_limit}</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'
+                }`}
+              style={{ width: `${Math.min(usagePercent, 100)}%` }}
+            />
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="pt-2 pb-4">
+        <div className="flex gap-2 w-full">
+          <Button variant="outline" size="sm" className="flex-1" onClick={onTest}>
+            <MessageSquare className="mr-2 h-3.5 w-3.5" />
+            Chat
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
+            Configure
+          </Button>
+        </div>
+      </CardFooter>
     </Card>
   )
 }

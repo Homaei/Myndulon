@@ -4,7 +4,7 @@
 
 import type { BotConfig, ChatRequest } from '../types'
 
-const DEFAULT_API_URL = 'http://localhost:8000'
+const DEFAULT_API_URL = 'http://localhost:8080'
 
 /**
  * Fetch bot configuration from API.
